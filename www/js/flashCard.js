@@ -9,12 +9,23 @@ $(function () {
       me.value = value;
    }
 
-   Card.prototype.toString = function() {
+   Card.setSize = function (w, h) {
+      var me = this;
+      me.width = w;
+      me.height = h;
+      console.log($.format('card size=({0}, {1})', w, h));
+   }
+
+   Card.prototype.toString = function () {
       return this.value;
    }
 
-   Card.prototype.createEl = function() {
-      return $.format('<div class="card">{0}</div>', this.value);
+   Card.prototype.wrapCard = function (innerHtml) {
+      return $.format('<div class="card">{0}</div>', innerHtml);
+   }
+
+   Card.prototype.createEl = function () {
+      return this.wrapCard(this.value);
    }
 
    function PointCard(value) {
@@ -23,6 +34,123 @@ $(function () {
    }
 
    PointCard.prototype = new Card(null);
+   PointCard.prototype.constructor = PointCard;
+
+
+   PointCard.calcPointSize = function () {
+      var me = this;
+      // TODO: calc pointSize according to card size and max card value
+      var pointW = 100;
+      me.pointWidth = pointW;
+      me.pointHeight = pointW;
+      console.log($.format('point size=({0}, {1})', pointW, pointW));
+   }
+
+   PointCard._createGrid = function () {
+      var me = this;
+      if (!(Card.width && Card.height)) {
+         console.log('create grid fail, since width/height is not set');
+         return null;
+      }
+
+      if (!(me.pointWidth && me.pointHeight)) {
+         PointCard.calcPointSize();
+      }
+
+      me.grid = {
+         init:function () {
+            var me = this;
+            me.data = [];
+
+            me._calcGrid();
+            me.reset();
+
+            return me;
+         },
+
+         _calcGrid:function () {
+            var me = this;
+            me._divide(Card.width, PointCard.pointWidth, 'xLen', 'paddingX');
+            me._divide(Card.height, PointCard.pointHeight, 'yLen', 'paddingY');
+         },
+
+         _divide:function (totalSize, blockSize, lenPropertyName, paddingPropertyName) {
+            var me = this;
+            var totalPadding = totalSize % blockSize;
+            me[paddingPropertyName] = Math.floor(totalPadding / 2);
+            me[lenPropertyName] = Math.floor((totalSize - totalPadding) / blockSize);
+         },
+
+         reset:function () {
+            var me = this;
+            for (var i = 0; i < me.xLen; i++) {
+               me.data[i] = [];
+               for (var j = 0; j < me.yLen; j++) {
+                  me.data[i][j] = false;
+               }
+            }
+         },
+
+         isPositioned:function (x, y) {
+            var me = this;
+            return !!(me.data[x] && me.data[x][y]);
+         },
+
+         positionAt:function (x, y) {
+            var me = this;
+            me.data[x][y] = true;
+            return {
+               x: me.paddingX + x * PointCard.pointWidth,
+               y: me.paddingY + y * PointCard.pointHeight
+            };
+         }
+      };
+
+      me.grid.init();
+   }
+
+   PointCard.prototype.createEl = function () {
+      var me = this;
+
+      if (!PointCard.grid) {
+         PointCard._createGrid();
+      }
+
+      if (!PointCard.grid) {
+         console.error('fail to create PointCard.grid');
+         return;
+      }
+
+      PointCard.grid.reset();
+
+      var pointEls = [];
+
+      for (var i = 0; i < me.value; i++) {
+         var pointEl = me._createPointEl();
+         pointEls[i] = pointEl;
+      }
+
+      return me.wrapCard(pointEls.join(''));
+   }
+
+   PointCard.prototype._createPointEl = function () {
+      var me = this;
+      var grid = PointCard.grid;
+      while (true) {
+         var x = $.math.randomInt(0, grid.xLen - 1);
+         var y = $.math.randomInt(0, grid.yLen - 1);
+         if (!grid.isPositioned(x, y)) {
+            var position = grid.positionAt(x, y);
+            var left = position.x;
+            var top = position.y;
+
+            console.log($.format('point[{0}]({1}, {2}): ({3}, {4})', me.value, x, y, left, top));
+
+            return $.format('<div class="point" style="top:{0}px; left:{1}px; width:{2}px; height:{2}px; background-size: {2}px auto"></div>',
+               top, left, PointCard.pointWidth);
+         }
+      }
+   }
 
    function ArithmeticCard() {
 
@@ -45,7 +173,7 @@ $(function () {
    }
 
    var cardManager = {
-      cardCont: null,
+      cardCont:null,
 
       // TODO: now we only support PointCard
       createCards:function (cardType, values) {
@@ -58,12 +186,12 @@ $(function () {
          }
 
          if (values === null || values === undefined) {
-            values = cardType.defaultValues;
+            values = cardType.defaultValues;       // TODO, set default values for card
          } else if ($.type(values) != 'array') {
             values = [values];
          }
 
-         values.forEach(function(value, index){
+         values.forEach(function (value, index) {
             me.cards[index] = new cardType(value);
          });
       },
@@ -80,7 +208,7 @@ $(function () {
          me._showCardAtIndex(0);
       },
 
-      _createCardElements: function() {
+      _createCardElements:function () {
          var me = this;
 
          if (!me.cardCont) {
@@ -89,9 +217,13 @@ $(function () {
          }
 
          me.cardCont.empty();
+         me.cardWidth = me.cardCont.width();
+         me.cardHeight = me.cardCont.height();
          me.$cards = [];
 
-         me.cards.forEach(function(card, index){
+         Card.setSize(me.cardWidth, me.cardHeight);
+
+         me.cards.forEach(function (card, index) {
             var $card = $(card.createEl());
             $card.hide();
             me.$cards[index] = $card;
@@ -102,7 +234,7 @@ $(function () {
          return true;
       },
 
-      _showCardAtIndex: function(playCardIndex) {
+      _showCardAtIndex:function (playCardIndex) {
          var me = this;
 
          if (me.paused) {
@@ -116,13 +248,14 @@ $(function () {
 
          var settings = flashCard.settings;
          var duration = 0; //settings.displayTime / 5; // ; 'fast', 'slow'
+         // TODO: animation type
          var toggleMethod = 'fadeToggle'; // 'toggle', 'fadeToggle', 'slideToggle'
 
-         var __showCurrentCard = function(currentCardIndex){
+         var __showCurrentCard = function (currentCardIndex) {
             var currentCard = me.$cards[currentCardIndex];
-            currentCard[toggleMethod](duration, function(){
-               window.setTimeout(function(){
-                  me._showCardAtIndex(currentCardIndex+1);
+            currentCard[toggleMethod](duration, function () {
+               window.setTimeout(function () {
+                  me._showCardAtIndex(currentCardIndex + 1);
                }, settings.displayTime);
             });
          }
@@ -135,7 +268,7 @@ $(function () {
          }
       },
 
-      _playOneRound: function() {
+      _playOneRound:function () {
          var me = this;
 
          console.log('play one round');
@@ -169,7 +302,7 @@ $(function () {
       },
 
       type:{
-         pointCard: PointCard
+         pointCard:PointCard
       },
 
       cardManager:cardManager

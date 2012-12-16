@@ -86,3 +86,9 @@ h1 {
     font-size: 40px;
     color: red;
 }
+
+.point {
+    background: no-repeat url(../img/red_point.png);
+    position: absolute;
+    display: inline-block;
+}

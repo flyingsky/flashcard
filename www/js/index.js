@@ -46,7 +46,7 @@ $(function(){
    cardMgr.cardCont = $('#cards');
 
    // TODO: test
-   var numbers = [];
+   var numbers = [5];
    for(var i = 0; i < 10; i++) {
       numbers[i] = i + 1;
    }
