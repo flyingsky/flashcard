@@ -3,7 +3,7 @@
  * Date: 12/15/12 10:17 PM
  */
 
-$(function () {
+(function() {
    function Card(value) {
       var me = this;
       me.value = value;
@@ -241,6 +241,8 @@ $(function () {
             return;
          }
 
+         console.log('playCardIndex=' + playCardIndex);
+
          if (playCardIndex == me.cards.length) {
             me._playOneRound();
             return;
@@ -262,7 +264,7 @@ $(function () {
 
          var previousCard = playCardIndex == 0 ? me.$cards[me.$cards.length - 1] : me.$cards[playCardIndex - 1];
          if (previousCard && previousCard.is(':visible')) {
-            previousCard[toggleMethod](duration, __showCurrentCard(playCardIndex));
+            previousCard[toggleMethod](duration, function(){__showCurrentCard(playCardIndex);});
          } else {
             __showCurrentCard(playCardIndex);
          }
@@ -294,7 +296,7 @@ $(function () {
    var flashCard = {
       // TODO: it should be configurable
       settings:{
-         displayTime:500, // ms, effect when autoPlay is true
+         displayTime:1500, // ms, effect when autoPlay is true
          animation:'fade', // blind, drop, explode, clip, puff
          autoPlay:true,
          randomPlay:true,
@@ -309,4 +311,4 @@ $(function () {
    };
 
    window.flashCard = flashCard;
-});
+})();

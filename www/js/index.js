@@ -17,40 +17,50 @@
  * under the License.
  */
 
-$(function(){
+$(function () {
    var app = {
       // Application Constructor
-      initialize: function() {
+      initialize:function () {
          this.bindEvents();
+         if (!window.startFromDevice) {
+            console.log('start from browser');
+            this.start();
+         }
       },
       // Bind Event Listeners
       //
       // Bind any events that are required on startup. Common events are:
       // `load`, `deviceready`, `offline`, and `online`.
-      bindEvents: function() {
+      bindEvents:function () {
          document.addEventListener('deviceready', this.onDeviceReady, false);
       },
       // deviceready Event Handler
       //
       // The scope of `this` is the event. In order to call the `receivedEvent`
       // function, we must explicity call `app.receivedEvent(...);`
-      onDeviceReady: function() {
+      onDeviceReady:function () {
          console.log('deviceready');
+         console.log('start from device');
+         app.start();
+      },
+
+      start:function () {
+         var fc = flashCard;
+         var cardMgr = fc.cardManager;
+         cardMgr.cardCont = $('#cards');
+
+         console.log('ready to play cards, cardSize=' + cardMgr.cardCont.width() + ', ' + cardMgr.cardCont.height());
+
+         // TODO: test
+         var numbers = [5];
+         for (var i = 0; i < 10; i++) {
+            numbers[i] = i + 1;
+         }
+
+         cardMgr.createCards(fc.type.pointCard, numbers);
+         cardMgr.play();
       }
    };
 
    app.initialize();
-
-   var fc = flashCard;
-   var cardMgr = fc.cardManager;
-   cardMgr.cardCont = $('#cards');
-
-   // TODO: test
-   var numbers = [5];
-   for(var i = 0; i < 10; i++) {
-      numbers[i] = i + 1;
-   }
-
-   cardMgr.createCards(fc.type.pointCard, numbers);
-   cardMgr.play();
 });
